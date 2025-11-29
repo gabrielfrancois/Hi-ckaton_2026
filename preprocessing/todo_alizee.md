@@ -88,7 +88,7 @@ Créer une classe `OrdinalPreprocessor`et `CategoricalPreprocessor` avec des mé
 ### 🟡 PHASE 2 : CRÉATION DES CLASSES DE PREPROCESSING
 **Objectif** : Implémenter le scénario CONSERVATEUR (Phases 1-2) avec 2 classes OOP
 
-#### [] 2.1 - Créer classe `OrdinalPreprocessor` dans `preprocessing/classes/ordinal_preprocessor.py`
+#### [V] 2.1 - Créer classe `OrdinalPreprocessor` dans `preprocessing/classes/ordinal_preprocessor.py`
 **Objectif** : Classe pour gérer toutes les transformations des variables ordinales
 
 **Méthodes à implémenter** :
@@ -155,7 +155,7 @@ class OrdinalPreprocessor:
 - Stocker tous les transformers (encoders, scaler) comme attributs
 - **Gain** : -7 variables ordinales (-5 suppressions + -2 par scores composites)
 
-#### [] 2.2 - Créer classe `CategoricalPreprocessor` dans `preprocessing/classes/categorical_preprocessor.py`
+#### [V] 2.2 - Créer classe `CategoricalPreprocessor` dans `preprocessing/classes/categorical_preprocessor.py`
 **Objectif** : Classe pour gérer toutes les transformations des variables catégorielles
 
 **Méthodes à implémenter** :
@@ -234,7 +234,7 @@ class CategoricalPreprocessor:
 - Stocker tous les encoders/mappings comme attributs
 - **Gain** : -17 variables catégorielles (-10 métadonnées + -7 redondances)
 
-#### [] 2.3 - Créer fonctions utilitaires `preprocessing/utils/preprocessing_utils.py`
+#### [V] 2.3 - Créer fonctions utilitaires `preprocessing/utils/preprocessing_utils.py`
 **Objectif** : Fonctions auxiliaires pour orchestrer les 2 preprocessors
 
 **Fonctions à implémenter** :
@@ -276,7 +276,7 @@ def generate_preprocessing_report(df_before: pd.DataFrame, df_after: pd.DataFram
 - Gérer stratification sur bins de MathScore
 - **Output** : Module utils avec fonctions helper
 
-#### [] 2.4 - Créer tests unitaires `preprocessing/tests/test_preprocessors.py`
+#### [V] 2.4 - Créer tests unitaires `preprocessing/tests/test_preprocessors.py`
 **Objectif** : Tester chaque méthode des classes
 
 **Sous-tâches** :
@@ -287,11 +287,28 @@ def generate_preprocessing_report(df_before: pd.DataFrame, df_after: pd.DataFram
 - Tester absence de data leakage (fit/transform séparés)
 - **Output** : Suite de tests avec pytest
 
+#### [] 2.5 - Intégrer le préprocessing effectué par Gabriel sur les autres variables (numériques et de groupement)
+- Gabriel a créé 2 scripts qui traitent uniquement les colonnes des variables (numériques et de groupement). 
+- Ces colonnes sont préprocessées puis elles sont concaténées dans un même dataframe.
+- Enfin, il ajoute les colonnes qu'il n'a pas touchées (les variables ordinales et categorical).
+- Une fois tout ceci effectué, il y a un .CSV qui s'appelle `X_numerical_grouped_cleaned_train.csv`.
+
+#### [] 2.6 - Créer un script pour lancer le preprocessing et sauvegarder dans data/
+- Le script est `run_preprocessing_on_data.py`.
+- Récupérer le CSV de Gabriel.
+- Appliquer le préprocessing sur les variables ordinales et categorical.
+- Sauvegarder dans `data/X_train_preprocessed_{date}_{heure}.csv`
+
+
+#### [] 2.7 - Créer un notebook pour tester le preprocessing
+- Fait dans `preprocessing/tests/analysis_X_train_preprocessed.ipynb``
+- L'objectif est de vérifier que le csv ainsi obtenu respecte un certain nombre de critères.
+
 ---
 
 ### 🟢 PHASE 3 : FEATURE SELECTION ET VALIDATION
 
-#### [] 6.1 - Implémenter feature selection hybride `preprocessing/scripts/feature_selection.py`
+#### [V] 3.1 - Implémenter feature selection hybride `preprocessing/scripts/feature_selection.py`
 **Objectif** : Sélectionner ~20-35 features optimales (recommandation littérature)
 
 **Sous-tâches** :
@@ -308,49 +325,8 @@ def generate_preprocessing_report(df_before: pd.DataFrame, df_after: pd.DataFram
 - Créer intersection des features sélectionnées par les 2 méthodes
 - **Output** : Liste de features sélectionnées + scores d'importance
 
-#### [] 3.2 - Créer notebook de validation `preprocessing/02_validation_preprocessing.ipynb`
+#### [V] 3.2 - Créer notebook de validation `preprocessing/02_validation_preprocessing.ipynb`
 **Objectif** : Valider le preprocessing complet et analyser résultats
-
-**Pipeline d'exécution** :
-```python
-from classes.ordinal_preprocessor import OrdinalPreprocessor
-from classes.categorical_preprocessor import CategoricalPreprocessor
-from utils.preprocessing_utils import *
-
-# 1. Charger données
-df = pd.read_csv('data/X_train.csv')
-
-# 2. Remove high missing
-df = remove_high_missing_vars(df, threshold=0.5)
-
-# 3. Appliquer nettoyage (avant split)
-ordinal_prep = OrdinalPreprocessor()
-categorical_prep = CategoricalPreprocessor()
-
-df = ordinal_prep.drop_redundant_variables(df)
-df = categorical_prep.drop_metadata_variables(df)
-df = categorical_prep.drop_redundant_variables(df)
-df = categorical_prep.group_isco_codes(df)
-df = ordinal_prep.create_composite_scores(df)
-
-# 4. Split train/val/test
-X_train, X_val, X_test, y_train, y_val, y_test = split_train_val_test(df)
-
-# 5. Appliquer transformations (fit sur train)
-X_train, X_val, X_test = ordinal_prep.impute_knn(X_train, X_val, X_test)
-X_train, X_val, X_test = categorical_prep.impute_mode(X_train, X_val, X_test)
-X_train, X_val, X_test = ordinal_prep.winsorize_outliers(X_train, X_val, X_test)
-X_train, X_val, X_test = categorical_prep.group_rare_categories(X_train, X_val, X_test)
-X_train, X_val, X_test = ordinal_prep.encode_ordinal_variables(X_train, X_val, X_test)
-X_train, X_val, X_test = categorical_prep.encode_binary_variables(X_train, X_val, X_test)
-X_train, X_val, X_test = categorical_prep.onehot_encode_low_cardinality(X_train, X_val, X_test)
-X_train, X_val, X_test = categorical_prep.frequency_encode_high_cardinality(X_train, X_val, X_test)
-X_train, X_val, X_test = ordinal_prep.standardize_variables(X_train, X_val, X_test)
-
-# 6. Validation
-validation_report = validate_preprocessing(df, X_train, target='MathScore')
-preprocessing_report = generate_preprocessing_report(df, X_train, ordinal_prep, categorical_prep)
-```
 
 **Sous-tâches** :
 - Exécuter pipeline complet ci-dessus
@@ -420,17 +396,6 @@ y_test.to_csv('data/processed/y_test.csv', index=False)
 # 7. Générer rapport
 report = generate_preprocessing_report(df_before, X_train, ordinal_prep, categorical_prep)
 ```
-
-#### [] 4.2 - Créer notebook démo `preprocessing/03_demo_preprocessing.ipynb`
-**Objectif** : Démonstration complète du preprocessing
-
-**Sous-tâches** :
-- Charger données brutes
-- Montrer étape par étape chaque transformation
-- Visualiser impact de chaque étape
-- Afficher statistiques avant/après
-- Sauvegarder résultats finaux
-- **Output** : Notebook démo commenté
 
 
 ---
@@ -546,6 +511,7 @@ report = generate_preprocessing_report(df_before, X_train, ordinal_prep, categor
 
 ## 🎓 BONNES PRATIQUES À RESPECTER
 
+USE POLARS, NOT PANDAS
 ✅ **Programmation Orientée Objet** : Créer des classes si c'est pertinent.
 ✅ **Noms de fonctions explicites** : `encode_ordinal_variables` pas `encode_vars`
 ✅ **Docstrings complètes** : Paramètres, returns, exemples
