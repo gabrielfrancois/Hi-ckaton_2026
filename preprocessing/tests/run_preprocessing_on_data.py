@@ -1,5 +1,5 @@
 """
-Script pour exécuter le preprocessing complet sur X_train.csv et sauvegarder le résultat
+Script pour exécuter le preprocessing complet sur X_numerical_grouped_cleaned_train.csv et sauvegarder le résultat
 """
 
 import sys
@@ -40,12 +40,12 @@ def main():
     """Pipeline complet de preprocessing"""
 
     print("\n" + "="*80)
-    print("PREPROCESSING COMPLET - X_train.csv")
+    print("PREPROCESSING COMPLET - X_numerical_grouped_cleaned_train.csv")
     print("="*80 + "\n")
 
     # 1. Charger les données
-    print("📂 Chargement de X_train.csv...")
-    data_path = os.path.join(os.path.dirname(__file__), '../../data/X_train.csv')
+    print("📂 Chargement de X_numerical_grouped_cleaned_train.csv...")
+    data_path = os.path.join(os.path.dirname(__file__), '../../data/X_numerical_grouped_cleaned_train.csv')
     df = pl.read_csv(data_path)
     df_original = df.clone()
 
