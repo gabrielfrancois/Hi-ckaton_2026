@@ -135,30 +135,52 @@ def main():
     print(f"   Variables ordinales présentes: {len(ordinal_vars_present)}/{len(ordinal_vars)}")
     print(f"   Variables catégorielles présentes: {len(categorical_vars_present)}/{len(categorical_vars)}")
 
-    # 3. Supprimer variables avec >50% missing
-    print("\n🧹 Suppression variables avec >50% missing...")
-    df = remove_high_missing_vars(df, threshold=0.5)
-
-    # Mettre à jour les listes
-    ordinal_vars_present = [v for v in ordinal_vars_present if v in df.columns]
-    categorical_vars_present = [v for v in categorical_vars_present if v in df.columns]
-
-    # 4. Initialiser les preprocessors
+    # 3. Initialiser les preprocessors AVANT de supprimer les variables
     print("\n⚙️  Initialisation des preprocessors...")
     ordinal_prep = OrdinalPreprocessor(ordinal_vars=ordinal_vars_present.copy())
     categorical_prep = CategoricalPreprocessor(categorical_vars=categorical_vars_present.copy())
 
-    # 5. Appliquer preprocessing ordinal
+    # 4. Créer les scores composites AVANT de supprimer les variables à fort taux de missing
+    print("\n🔢 Création des scores composites (avant suppression des variables)...")
+    df = ordinal_prep.create_composite_scores(df)
+
+    # Mettre à jour la liste des variables ordinales après création des composites
+    for composite_name, original_vars in ordinal_prep.composite_scores.items():
+        for var in original_vars:
+            if var in ordinal_prep.ordinal_vars:
+                ordinal_prep.ordinal_vars.remove(var)
+        ordinal_prep.ordinal_vars.append(composite_name)
+
+    print(f"   Scores composites créés: {list(ordinal_prep.composite_scores.keys())}")
+
+    # 5. Supprimer variables avec >50% missing (après création des composites)
+    print("\n🧹 Suppression variables avec >50% missing...")
+    df = remove_high_missing_vars(df, threshold=0.5)
+
+    # Mettre à jour les listes
+    ordinal_vars_present = [v for v in ordinal_prep.ordinal_vars if v in df.columns]
+    categorical_vars_present = [v for v in categorical_vars_present if v in df.columns]
+
+    # 6. Appliquer le reste du preprocessing ordinal
     print("\n🔢 Preprocessing des variables ordinales...")
     print("   - Suppression variables redondantes")
-    print("   - Création scores composites")
-    df = ordinal_prep.fit_transform(df)
+    df = ordinal_prep.drop_redundant_variables(df)
+
+    # Mettre à jour la liste après suppression des redondantes
+    for var in ordinal_prep.variables_to_drop:
+        if var in ordinal_prep.ordinal_vars:
+            ordinal_prep.ordinal_vars.remove(var)
+
+    # Imputation médiane
+    df = ordinal_prep.impute_median_simple(df)
+
+    ordinal_prep.is_fitted = True
 
     print(f"   Variables ordinales après transformation: {len(ordinal_prep.ordinal_vars)}")
     print(f"   Variables supprimées: {ordinal_prep.variables_to_drop}")
     print(f"   Scores composites créés: {list(ordinal_prep.composite_scores.keys())}")
 
-    # 6. Appliquer preprocessing catégoriel
+    # 7. Appliquer preprocessing catégoriel
     print("\n🏷️  Preprocessing des variables catégorielles...")
     print("   - Suppression métadonnées")
     print("   - Suppression redondances")
@@ -169,14 +191,14 @@ def main():
     print(f"   Variables supprimées: {categorical_prep.variables_to_drop}")
     print(f"   Regroupements ISCO: {categorical_prep.isco_mapping}")
 
-    # 7. Imputation générique des colonnes restantes
+    # 8. Imputation générique des colonnes restantes
     df = impute_remaining_nulls(df)
 
-    # 8. Générer rapport
+    # 9. Générer rapport
     print("\n📊 Génération du rapport de preprocessing...")
     report = generate_preprocessing_report(df_original, df, ordinal_prep, categorical_prep)
 
-    # 9. Sauvegarder le résultat
+    # 10. Sauvegarder le résultat
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"X_train_preprocessed_{timestamp}.csv"
     output_path = os.path.join(os.path.dirname(__file__), '../../data/', output_filename)

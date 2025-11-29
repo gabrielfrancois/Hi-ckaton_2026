@@ -287,21 +287,21 @@ def generate_preprocessing_report(df_before: pd.DataFrame, df_after: pd.DataFram
 - Tester absence de data leakage (fit/transform séparés)
 - **Output** : Suite de tests avec pytest
 
-#### [] 2.5 - Intégrer le préprocessing effectué par Gabriel sur les autres variables (numériques et de groupement)
+#### [V] 2.5 - Intégrer le préprocessing effectué par Gabriel sur les autres variables (numériques et de groupement)
 - Gabriel a créé 2 scripts qui traitent uniquement les colonnes des variables (numériques et de groupement). 
-- Ces colonnes sont préprocessées puis elles sont concaténées dans un même dataframe.
+- Ces colonnes sont préprocessées puis elles sont concaténées dans un même dataframe. Il faut lancer `concat.py`.
 - Enfin, il ajoute les colonnes qu'il n'a pas touchées (les variables ordinales et categorical).
 - Une fois tout ceci effectué, il y a un .CSV qui s'appelle `X_numerical_grouped_cleaned_train.csv`.
 
-#### [] 2.6 - Créer un script pour lancer le preprocessing et sauvegarder dans data/
+#### [V] 2.6 - Créer un script pour lancer le preprocessing et sauvegarder dans data/
 - Le script est `run_preprocessing_on_data.py`.
 - Récupérer le CSV de Gabriel.
 - Appliquer le préprocessing sur les variables ordinales et categorical.
 - Sauvegarder dans `data/X_train_preprocessed_{date}_{heure}.csv`
 
 
-#### [] 2.7 - Créer un notebook pour tester le preprocessing
-- Fait dans `preprocessing/tests/analysis_X_train_preprocessed.ipynb``
+#### [V] 2.7 - Créer un notebook pour tester le preprocessing
+- Fait dans `preprocessing/tests/analysis_X_train_preprocessed.ipynb`
 - L'objectif est de vérifier que le csv ainsi obtenu respecte un certain nombre de critères.
 
 ---
