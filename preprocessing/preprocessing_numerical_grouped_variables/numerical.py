@@ -1,5 +1,5 @@
-from helper_functions.print import *
-from load import df_numerical_train
+from ..helper_functions.print import *
+from .load import df_numerical_train, df_numerical_test
 
 import polars as pl 
 import polars.selectors as cs
@@ -324,6 +324,7 @@ def dataset_numerical_cleaner(df: pl.DataFrame):
     
     
 df_numerical_cleaned_train = dataset_numerical_cleaner(df_numerical_train)
+df_numerical_cleaned_test = dataset_numerical_cleaner(df_numerical_test)
 
 
 if __name__ == "__main__":

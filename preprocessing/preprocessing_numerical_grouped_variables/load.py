@@ -1,7 +1,11 @@
-from helper_functions.print import *
+from ..helper_functions.print import *
 
-import polars as pl 
+import polars as pl
 import polars.selectors as cs
+from pathlib import Path
+
+# Get the absolute path to the data directory
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
 
 def load_csv(path:str, display_columns_name:bool=False):
     print(orange("-"*10 + f" load : {path} " + "-"*10))
@@ -165,16 +169,18 @@ def select_grouped(df:pl.DataFrame):
     return df.select(grouped)
 
 
-df_train = load_csv("../../data/X_train.csv") # shape : (1172086, 307)
-# y_test = load_csv("../../data/y_train.csv")
+df_train = load_csv(str(DATA_DIR / "X_train.csv")) # shape : (1172086, 307)
+# y_test = load_csv(str(DATA_DIR / "y_train.csv"))
 df_numerical_train = select_numerical(df_train) # shape : (1172086, 135) all columns include null values
 df_grouped_train = select_grouped(df_train) # shape : (1172086, 6) all columns include null values
 
-
+X_test = load_csv(str(DATA_DIR / "X_test.csv"))
+df_numerical_test = select_numerical(X_test)
+df_grouped_test = select_grouped(X_test)
 
 if __name__ == "__main__":
     print(orange("-"*10 + " prereocessing " + "-"*10))
-    df = load_csv("../../data/X_train.csv") # shape : (1172086, 307)
+    df = load_csv(str(DATA_DIR / "X_train.csv")) # shape : (1172086, 307)
     df_numerical = select_numerical(df) # shape : (1172086, 135)
     df_grouped = select_grouped(df) # shape : (1172086, 6)
     

@@ -1,6 +1,6 @@
-from helper_functions.print import *
-from load import df_grouped_train
-from numerical import print_values, print_values_scope, display_null
+from ..helper_functions.print import *
+from .load import df_grouped_train, df_grouped_test
+from .numerical import print_values, print_values_scope, display_null
 
 import polars as pl 
 import polars.selectors as cs
@@ -19,6 +19,7 @@ def dataset_grouped_cleaner(df: pl.DataFrame):
     return df_grouped_cleaned
 
 df_grouped_cleaned_train = dataset_grouped_cleaner(df_grouped_train)
+df_grouped_cleaned_test = dataset_grouped_cleaner(df_grouped_test)
 
 
 if __name__ == "__main__":
