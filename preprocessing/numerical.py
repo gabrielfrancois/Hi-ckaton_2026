@@ -1,5 +1,5 @@
 from helper_functions.print import *
-from preprocessing.load import df_numerical
+from preprocessing.load import df_numerical_train
 
 import polars as pl 
 import polars.selectors as cs
@@ -80,7 +80,7 @@ def display_null(df:pl.DataFrame):
         if numericals_null[col][0]/nb_raw > 0
     ]
     if cols_with_nulls:
-        print(bold(f"remained null columns: \n {cols_with_nulls}"))
+        print(bold(f"Remained null columns: \n {cols_with_nulls}"))
     else:
         print(bold("No column containing null value left"))
     
@@ -130,7 +130,8 @@ def clean_other(df: pl.DataFrame, threshold: float = 0.05):
     
     # PA159 = ST175 ! IC183 and ST163 : correlation != reason
     # FL164 --> no sens
-    to_drop = ["PA159", "IC183", "ST163", "FL164"]
+    # "WB177" (prefr WB176), "PA041" (correlation != reason), "ST164" (same), "ST165" (too correlated with ST059), "ST211" (too corelated with PA182), PA182 (same as ST059) decided after correlation matrix
+    to_drop = ["PA159", "IC183", "ST163", "FL164", "WB177", "PA041", "ST164", "ST165", "ST211", "PA182", "ST175"]
     print(f"    delete useless data: {to_drop}")
     df = df.drop(to_drop)
     
@@ -170,42 +171,171 @@ def clean_other(df: pl.DataFrame, threshold: float = 0.05):
         ])
         
     return df
+
+def check_high_correlations(df: pl.DataFrame, threshold: float = 0.90):
+    """
+    Calculates the correlation matrix and prints pairs with correlation > threshold.
+    """
+    print(orange(f"\n--- Checking Correlations > {threshold} (Redundancy Check) ---"))
+    
+    # Select only numeric columns
+    numeric_df = df.select(cs.numeric())
+    
+    # Calculate Correlation Matrix
+    corr_df = numeric_df.corr()
+    
+    # Iterate to find high values
+    cols = corr_df.columns
+    printed_pairs = set()
+    found_high_corr = False
+    
+    for i, col_a in enumerate(cols):
+        for j, col_b in enumerate(cols):
+            if i >= j: continue # Skip diagonal and duplicates
+            
+            # Polars correlation matrix can be accessed by column name and row index
+            val = corr_df[col_a][j] 
+            
+            if abs(val) > threshold:
+                found_high_corr = True
+                print(f"High Correlation ({val:.4f}): {col_a} <--> {col_b}")
+                
+    if not found_high_corr:
+        print("No columns found exceeding the redundancy threshold.")
+
+# TODO actually don't use it but it can be enhanced to become relevant!
+def create_interaction_features(df: pl.DataFrame):
+    """
+    Creates Efficiency (Score/Time) and Fast Guesser flags.
+    Goal : reduce explainable variable to prevent overfitting
+    """
+    print(orange("\n--- Creating Interaction Features (Efficiency & Fast Guesser) ---"))
+    
+    new_cols_exprs = []
+    cols_to_drop = []
+    
+    # Iterate over all columns to find 'average_score'
+    for col in df.columns:
+        if "average_score" in col:
+            # Infer the matching timing column name
+            timing_col = col.replace("average_score", "total_timing")
+            guesser_name = col.replace("average_score", "is_fast_guesser")
+            
+            # Only proceed if the matching timing column actually exists
+            if timing_col in df.columns:
+                eff_name = col.replace("average_score", "efficiency")
+                
+                # Logic: Efficiency = Score / Time
+                # If time is valid (>0), divide. Otherwise set efficiency to -1.
+                eff_expr = (
+                    pl.when(pl.col(timing_col) > 0)
+                    .then(pl.col(col) / pl.col(timing_col))
+                    .otherwise(-1) 
+                    .alias(eff_name)
+                )
+                
+                # Assumes timing is already normalized to seconds
+                guesser_expr = (
+                    pl.when((pl.col(timing_col) > 0) & (pl.col(timing_col) < 5))
+                    .then(1.0) # Using float for consistency, or 1 for int
+                    .otherwise(0.0)
+                    .alias(guesser_name)
+                )
+                
+                new_cols_exprs.append(guesser_expr)
+                new_cols_exprs.append(eff_expr)
+                
+                # Mark originals for deletion
+                cols_to_drop.append(col)
+                cols_to_drop.append(timing_col)
+                
+    if new_cols_exprs:
+        print(f"Creating {len(new_cols_exprs)} efficiency columns and dropping {len(cols_to_drop)} original columns...")
+        
+        # Add the new efficiency columns
+        df = df.with_columns(new_cols_exprs)
+        
+        # Drop the old source columns
+        df = df.drop(cols_to_drop)
+    else:
+        print("No matching Score/Time pairs found to replace.")
+        
+    return df
+
+# only use it for XGBoost
+def normalize_preserving_flags(df: pl.DataFrame, flag_value: float = -1.0):
+    """
+    Normalizes columns to [0, 1] range via MinMax Scaling, 
+    BUT ignores and preserves the 'flag_value' (e.g., -1).
+    Formula: X_norm = (X - X_min) / (X_max - X_min)
+    """
+    print(orange("\n--- Normalizing Data (Keeping -1 as -1) ---"))
+    
+    numeric_cols = df.select(cs.numeric()).columns
+    expressions = []
+    
+    for col in numeric_cols:
+        # Compute min and max EXCLUDING the flag
+        valid_data = df.select(pl.col(col).filter(pl.col(col) != flag_value))
+        
+        if valid_data.height > 0:
+            min_val = valid_data.item(0, 0) # Just grabbing the first item isn't min, need .min()
+            min_val = valid_data.select(pl.min(col)).item()
+            max_val = valid_data.select(pl.max(col)).item()
+            
+            # Avoid division by zero if max == min
+            if max_val != min_val:
+                # Apply normalization only where value != flag
+                expr = (
+                    pl.when(pl.col(col) != flag_value)
+                    .then((pl.col(col) - min_val) / (max_val - min_val))
+                    .otherwise(flag_value) # Keep the flag
+                    .alias(col)
+                )
+                expressions.append(expr)
+    
+    if expressions:
+        print(f"    Normalizing {len(expressions)} columns...")
+        df = df.with_columns(expressions)
+        
+    return df
+
+def dataset_numerical_cleaner(df: pl.DataFrame):
+    
+    print(orange("-"*5 + " cleaning numerical dataset " + "-"*5))
+
+    df_numerical_cleaned = df_numerical_train.with_columns(
+            pl.col(df_numerical_train.columns).cast(pl.Float64, strict=False)
+        )
+
+    # # Clean too empty columns
+    df_numerical_cleaned = drop_sparse_columns(df_numerical_cleaned)
+
+    # # Replace nll data by -1 on the score/timing
+    df_numerical_cleaned = handle_scores_and_timing(df_numerical_cleaned)
+
+    # # process others
+    df_numerical_cleaned = clean_other(df_numerical_cleaned)
+
+    # # normalize data
+    # df_numerical_cleaned = normalize_preserving_flags(df_numerical_cleaned)
+    
+    return df_numerical_cleaned
     
     
-# df_numerical = df_numerical.with_columns(
-#         pl.col(df_numerical.columns).cast(pl.Float64, strict=False)
-#     )
-
-# # Clean too empty columns
-# df_numerical = drop_sparse_columns(df_numerical)
-
-# # Replace nll data by -1 on the score/timing
-# df_numerical = handle_scores_and_timing(df_numerical)
-
-# # process others
-# df_numerical = clean_other(df_numerical)
-
+df_numerical_cleaned_train = dataset_numerical_cleaner(df_numerical_train)
 
 
 if __name__ == "__main__":
     # Set up 
-    nb_raw = df_numerical.shape[0]
-    nb_col = df_numerical.shape[1]
-    df_numerical = df_numerical.with_columns(
-        pl.col(df_numerical.columns).cast(pl.Float64, strict=False)
-    )
+    nb_raw = df_numerical_train.shape[0]
+    nb_col = df_numerical_train.shape[1]
     
-    # Clean too empty columns
-    df_numerical = drop_sparse_columns(df_numerical)
+    df_numerical_cleaned_train = dataset_numerical_cleaner(df_numerical_train)
+        
+    check_high_correlations(df_numerical_cleaned_train)
+    print(df_numerical_cleaned_train.shape)
     
-    # Replace nll data by -1 on the score/timing
-    df_numerical = handle_scores_and_timing(df_numerical)
-    display_null(df_numerical)
-    
-    # process others
-    df_numerical = clean_other(df_numerical)
-    print_values_scope(df_numerical)
-    print(df_numerical.shape)
 
    
     
