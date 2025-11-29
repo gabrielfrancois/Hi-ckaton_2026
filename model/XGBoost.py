@@ -29,10 +29,11 @@ class PisaXGBoost:
         self.params = {
             'n_estimators': 2000,         
             'learning_rate': 0.02,        
-            'max_depth': 8,               
+            'max_depth': 6,      # 8
+            'min_child_weight': 5, # before no         
             'subsample': 0.85,            
             'colsample_bytree': 0.85,     
-            'gamma': 0.1,                 
+            'gamma': 0.5,    # 0.1             
             'reg_alpha': 0.5,             
             'reg_lambda': 1.5,            
             'n_jobs': -1,                 
@@ -179,10 +180,10 @@ class PisaXGBoost:
         plt.tight_layout()
         
         if not os.path.exists("model/output"): os.makedirs("model/output")
-        plt.savefig("model/output/feature_importance.png")
-        print(green("Feature importance plot saved to 'model/output/feature_importance.png'"))
+        plt.savefig("model/output/feature_importance1.png")
+        print(green("Feature importance plot saved to 'model/output/feature_importance1.png'"))
 
-    def save_model(self, path="model/output/xgb_pisa_model.json"):
+    def save_model(self, path="model/output/xgb_pisa_model1.json"):
         if not os.path.exists("model/output"): os.makedirs("model/output")
         self.model.save_model(path)
         print(green(f"Model saved successfully to {path}"))
@@ -191,9 +192,9 @@ if __name__ == "__main__":
     # --- CONFIGURATION ---
     DATA_DIR = "data" 
     
-    X_TRAIN_PATH = f"{DATA_DIR}/X_train_preprocessed_20251129_210719.csv" 
+    X_TRAIN_PATH = f"{DATA_DIR}/X_train_preprocessed_20251129_234423.csv" 
     Y_TRAIN_PATH = f"{DATA_DIR}/y_train.csv"
-    X_TEST_PATH = f"{DATA_DIR}/X_test_preprocessed_20251129_210728.csv"   
+    X_TEST_PATH = f"{DATA_DIR}/X_test_preprocessed_20251129_234429.csv"   
 
     # --- 1. INSTANTIATE ---
     xgb_pipeline = PisaXGBoost()
@@ -224,7 +225,7 @@ if __name__ == "__main__":
 
         # Save Predictions
         submission_df = pl.DataFrame({"predicted_score": test_preds})
-        submission_path = "model/output/submission.csv"
+        submission_path = "model/output/submission1.csv"
         if not os.path.exists("model/output"): os.makedirs("model/output")
         submission_df.write_csv(submission_path)
         print(green(f"Predictions saved to {submission_path}"))

@@ -301,11 +301,11 @@ def normalize_preserving_flags(df: pl.DataFrame, flag_value: float = -1.0):
     return df
 
 def dataset_numerical_cleaner(df: pl.DataFrame):
-    
+
     print(orange("-"*5 + " cleaning numerical dataset " + "-"*5))
 
-    df_numerical_cleaned = df_numerical_train.with_columns(
-            pl.col(df_numerical_train.columns).cast(pl.Float64, strict=False)
+    df_numerical_cleaned = df.with_columns(
+            pl.col(df.columns).cast(pl.Float64, strict=False)
         )
 
     # # Clean too empty columns
@@ -319,7 +319,7 @@ def dataset_numerical_cleaner(df: pl.DataFrame):
 
     # # normalize data
     # df_numerical_cleaned = normalize_preserving_flags(df_numerical_cleaned)
-    
+
     return df_numerical_cleaned
     
     
@@ -336,7 +336,3 @@ if __name__ == "__main__":
         
     check_high_correlations(df_numerical_cleaned_train)
     print(df_numerical_cleaned_train.shape)
-    
-
-   
-    
