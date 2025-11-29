@@ -76,181 +76,433 @@ Créer une classe `OrdinalPreprocessor`et `CategoricalPreprocessor` avec des mé
 
 #### [V] 1.9 - Analyser des papiers de recherche sur ce sujet, en déduire les méthodes recommandées
 
-#### [] 1.10 - Faire une synthèse des recommandations et mettre à jour cette to do list
-- Synthèse à partir de `preprocessing/analysis/categorial_variables/RESUME_EXECUTIF_Analyse_Categorielles.md`, 
-`preprocessing/analysis/ordinal_variables/RESUME_EXECUTIF_Analyse_Ordinales.md`, 
+#### [V] 1.10 - Faire une synthèse des recommandations et mettre à jour cette to do list
+- Synthèse à partir de `preprocessing/analysis/categorial_variables/RESUME_EXECUTIF_Analyse_Categorielles.md`,
+`preprocessing/analysis/ordinal_variables/RESUME_EXECUTIF_Analyse_Ordinales.md`,
 `preprocessing/analysis/analysis_from_pappers.md`et `preprocessing/01_eda_ordinal_categorical.ipynb`
+- **Output** : `preprocessing/analysis/conclusion_eda.md`
 - Mettre à jour la suite de cette To Do List.
 
 ---
 
-### 🟡 PHASE 2 : CRÉATION DES CLASSES DE PREPROCESSING (dans `classes/`)
-**Objectif** : Implémenter les classes basées sur les conclusions de l'EDA
+### 🟡 PHASE 2 : CRÉATION DES CLASSES DE PREPROCESSING
+**Objectif** : Implémenter le scénario CONSERVATEUR (Phases 1-2) avec 2 classes OOP
 
-#### [] 2.1 - Créer `classes/ordinal_preprocessor.py`
-- Classe `OrdinalPreprocessor` avec méthodes pour les 96 variables ordinales
-- Méthodes basées sur les conclusions de l'EDA (Phase 1)
+#### [] 2.1 - Créer classe `OrdinalPreprocessor` dans `preprocessing/classes/ordinal_preprocessor.py`
+**Objectif** : Classe pour gérer toutes les transformations des variables ordinales
 
-#### [] 2.2 - Créer `classes/categorical_preprocessor.py`
-- Classe `CategoricalPreprocessor` avec méthodes pour les 70 variables catégorielles
-- Méthodes basées sur les conclusions de l'EDA (Phase 1)
+**Méthodes à implémenter** :
+
+```python
+class OrdinalPreprocessor:
+    def __init__(self):
+        self.ordinal_vars = []  # Liste variables ordinales
+        self.variables_to_drop = []
+        self.composite_scores = {}
+        self.encoders = {}
+        self.scaler = None
+
+    # Phase 1 : Nettoyage
+    def drop_redundant_variables(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Supprimer 5 variables ordinales redondantes"""
+        # ST005, ST007, ST253, ST255, ST097
+
+    # Phase 2 : Scores composites
+    def create_composite_scores(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Créer scores composites pour variables mesurant même construit"""
+        # Score_Support_Parental = moyenne(PA003, ST300)
+        # Score_Support_Enseignant = moyenne(ST100, ST270)
+
+    # Phase 3 : Imputation
+    def impute_knn(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                   df_test: pd.DataFrame, k: int = 5) -> tuple:
+        """Imputer valeurs manquantes avec KNN (fit sur train)"""
+
+    # Phase 4 : Traitement outliers
+    def winsorize_outliers(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                          df_test: pd.DataFrame, limits: list = [0.01, 0.01]) -> tuple:
+        """Winsorization au 99ème percentile"""
+
+    # Phase 5 : Encodage
+    def encode_ordinal_variables(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                                df_test: pd.DataFrame) -> tuple:
+        """Encoder variables ordinales en préservant l'ordre (fit sur train)"""
+
+    # Phase 6 : Standardisation
+    def standardize_variables(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                             df_test: pd.DataFrame) -> tuple:
+        """Standardiser variables ordinales (fit sur train)"""
+
+    # Utils
+    def fit_transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Pipeline complet pour train"""
+
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Appliquer transformations sur val/test"""
+
+    def save(self, filepath: str):
+        """Sauvegarder preprocessor"""
+
+    @staticmethod
+    def load(filepath: str):
+        """Charger preprocessor sauvegardé"""
+```
+
+**Sous-tâches** :
+- Implémenter les 9 méthodes ci-dessus
+- Documenter chaque méthode avec docstrings
+- Gérer les valeurs manquantes lors des scores composites
+- Stocker tous les transformers (encoders, scaler) comme attributs
+- **Gain** : -7 variables ordinales (-5 suppressions + -2 par scores composites)
+
+#### [] 2.2 - Créer classe `CategoricalPreprocessor` dans `preprocessing/classes/categorical_preprocessor.py`
+**Objectif** : Classe pour gérer toutes les transformations des variables catégorielles
+
+**Méthodes à implémenter** :
+
+```python
+class CategoricalPreprocessor:
+    def __init__(self):
+        self.categorical_vars = []  # Liste variables catégorielles
+        self.variables_to_drop = []
+        self.isco_mapping = {}
+        self.rare_categories_mapping = {}
+        self.binary_encoders = {}
+        self.onehot_encoder = None
+        self.frequency_encoders = {}
+
+    # Phase 1 : Nettoyage
+    def drop_metadata_variables(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Supprimer 10 métadonnées catégorielles (risque ZÉRO)"""
+        # Option_CT, Option_FL, Option_ICTQ, Option_PQ, Option_TQ,
+        # Option_UH, Option_WBQ, CYC, NatCen, SUBNATIO
+
+    def drop_redundant_variables(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Supprimer 7 redondances catégorielles"""
+        # LANGTEST_PAQ, LANGTEST_QQQ, ST003D03T, ST001D01T,
+        # PA008, PA162, OCOD3
+
+    # Phase 2 : Regroupement ISCO (CRITIQUE)
+    def group_isco_codes(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Regrouper codes ISCO (620 → 10 catégories)"""
+        # OCOD1 → OCOD1_grouped (10 catégories)
+        # OCOD2 → OCOD2_grouped (10 catégories)
+        # Impact : -1240 features potentielles
+
+    # Phase 3 : Imputation
+    def impute_mode(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                    df_test: pd.DataFrame) -> tuple:
+        """Imputer avec mode (calculé sur train)"""
+
+    # Phase 4 : Catégories rares
+    def group_rare_categories(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                              df_test: pd.DataFrame, threshold: float = 0.01) -> tuple:
+        """Regrouper catégories < 1% en 'Other' (fit sur train)"""
+
+    # Phase 5 : Encodage
+    def encode_binary_variables(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                                df_test: pd.DataFrame) -> tuple:
+        """Encoder variables binaires en 0/1 (fit sur train)"""
+
+    def onehot_encode_low_cardinality(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                                      df_test: pd.DataFrame, max_categories: int = 10) -> tuple:
+        """One-Hot encoding pour cardinalité ≤10 (fit sur train)"""
+
+    def frequency_encode_high_cardinality(self, df_train: pd.DataFrame, df_val: pd.DataFrame,
+                                         df_test: pd.DataFrame) -> tuple:
+        """Frequency encoding pour cardinalité >10 (fit sur train)"""
+
+    # Utils
+    def fit_transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Pipeline complet pour train"""
+
+    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Appliquer transformations sur val/test"""
+
+    def save(self, filepath: str):
+        """Sauvegarder preprocessor"""
+
+    @staticmethod
+    def load(filepath: str):
+        """Charger preprocessor sauvegardé"""
+```
+
+**Sous-tâches** :
+- Implémenter les 12 méthodes ci-dessus
+- Documenter chaque méthode avec docstrings
+- Implémenter fonction `regroup_isco_codes()` pour extraire 1er chiffre
+- Stocker tous les encoders/mappings comme attributs
+- **Gain** : -17 variables catégorielles (-10 métadonnées + -7 redondances)
+
+#### [] 2.3 - Créer fonctions utilitaires `preprocessing/utils/preprocessing_utils.py`
+**Objectif** : Fonctions auxiliaires pour orchestrer les 2 preprocessors
+
+**Fonctions à implémenter** :
+
+```python
+def remove_high_missing_vars(df: pd.DataFrame, threshold: float = 0.5) -> pd.DataFrame:
+    """Supprimer variables avec >50% missing"""
+    missing_pct = df.isnull().mean()
+    high_missing = missing_pct[missing_pct > threshold].index.tolist()
+    print(f"Suppression de {len(high_missing)} variables avec >{threshold*100}% missing")
+    return df.drop(columns=high_missing)
+
+def split_train_val_test(df: pd.DataFrame, target: str = 'MathScore',
+                        test_size: float = 0.2, val_size: float = 0.2,
+                        random_state: int = 42) -> tuple:
+    """Split stratifié 60/20/20 sur bins de target"""
+    # Créer bins pour stratification
+    # Retourner X_train, X_val, X_test, y_train, y_val, y_test
+
+def validate_preprocessing(df_before: pd.DataFrame, df_after: pd.DataFrame,
+                          target: str = 'MathScore') -> dict:
+    """Valider preprocessing (no missing, dtypes, target unchanged)"""
+    # Vérifier 0 NaN
+    # Vérifier target identique
+    # Retourner rapport validation
+
+def generate_preprocessing_report(df_before: pd.DataFrame, df_after: pd.DataFrame,
+                                 ordinal_prep, categorical_prep) -> dict:
+    """Générer rapport preprocessing complet (markdown + JSON)"""
+    # Variables supprimées
+    # Variables créées
+    # Statistiques imputation
+    # Retourner dict avec toutes les métadonnées
+```
+
+**Sous-tâches** :
+- Implémenter les 4 fonctions ci-dessus
+- Documenter avec docstrings
+- Gérer stratification sur bins de MathScore
+- **Output** : Module utils avec fonctions helper
+
+#### [] 2.4 - Créer tests unitaires `preprocessing/tests/test_preprocessors.py`
+**Objectif** : Tester chaque méthode des classes
+
+**Sous-tâches** :
+- Tester OrdinalPreprocessor (drop, composite, encode, etc.)
+- Tester CategoricalPreprocessor (drop, ISCO, encode, etc.)
+- Tester PISAPreprocessor (pipeline complet)
+- Tester que MathScore n'est jamais modifié
+- Tester absence de data leakage (fit/transform séparés)
+- **Output** : Suite de tests avec pytest
 
 ---
 
-### 🟢 PHASE 3 : GESTION DES VALEURS MANQUANTES (à implémenter dans les classes)
+### 🟢 PHASE 3 : FEATURE SELECTION ET VALIDATION
 
-Stratégie à déterminer d'après la phase 1.
+#### [] 6.1 - Implémenter feature selection hybride `preprocessing/scripts/feature_selection.py`
+**Objectif** : Sélectionner ~20-35 features optimales (recommandation littérature)
 
----
+**Sous-tâches** :
+- Calculer Mutual Information sur train set
+  ```python
+  from sklearn.feature_selection import mutual_info_regression
+  mi_scores = mutual_info_regression(X_train, y_train)
+  ```
+- Implémenter Recursive Feature Elimination avec RandomForest
+  ```python
+  from sklearn.feature_selection import RFE
+  rfe = RFE(estimator=rf, n_features_to_select=30)
+  ```
+- Créer intersection des features sélectionnées par les 2 méthodes
+- **Output** : Liste de features sélectionnées + scores d'importance
 
-### 🟠 PHASE 4 : TRAITEMENT DES CATÉGORIES RARES (à implémenter dans les classes)
+#### [] 3.2 - Créer notebook de validation `preprocessing/02_validation_preprocessing.ipynb`
+**Objectif** : Valider le preprocessing complet et analyser résultats
 
-#### ☐ 4.1 - `group_rare_categories(df: pd.DataFrame, var: str, threshold: float = 0.01) -> pd.DataFrame`
-**Objectif** : Regrouper catégories rares en "Other"
-- Pour une variable catégorielle
-- Regrouper modalités représentant < 1% (ou seuil) en "Other"
-- Conserver mapping pour interprétabilité
-- **Output** : DataFrame avec catégories regroupées
+**Pipeline d'exécution** :
+```python
+from classes.ordinal_preprocessor import OrdinalPreprocessor
+from classes.categorical_preprocessor import CategoricalPreprocessor
+from utils.preprocessing_utils import *
 
-#### ☐ 4.2 - `reduce_stratum_dimensionality(df: pd.DataFrame) -> pd.DataFrame`
-**Objectif** : Réduire les 1316 strates en features exploitables
-- Parser STRATUM pour extraire :
-  - `stratum_location` : Urban / Rural
-  - `stratum_region` : North / Center / South / etc.
-  - `stratum_type` : Public / Private
-  - `stratum_country` : Code pays (3 lettres)
-- Supprimer STRATUM original
-- **Output** : DataFrame avec 4 nouvelles variables + suppression STRATUM
+# 1. Charger données
+df = pd.read_csv('data/X_train.csv')
 
-#### ☐ 4.3 - `group_occupations_by_major_group(df: pd.DataFrame) -> pd.DataFrame`
-**Objectif** : Regrouper les 620 professions en grands groupes ISCO
-- Utiliser le 1er chiffre du code OCOD pour créer 10 groupes :
-  - 0: Armed forces
-  - 1: Managers
-  - 2: Professionals
-  - 3: Technicians
-  - 4: Clerical support
-  - 5: Service and sales
-  - 6: Skilled agricultural
-  - 7: Craft workers
-  - 8: Plant operators
-  - 9: Elementary occupations
-- **Output** : DataFrame avec OCOD remplacé par OCOD_major_group
+# 2. Remove high missing
+df = remove_high_missing_vars(df, threshold=0.5)
 
-#### ☐ 4.4 - `resolve_cnt_cntryid_redundancy(df: pd.DataFrame) -> pd.DataFrame`
-**Objectif** : Supprimer la redondance entre CNT et CNTRYID
-- Vérifier corrélation parfaite
-- Garder CNT (plus lisible : codes 3 lettres)
-- Supprimer CNTRYID
-- **Output** : DataFrame sans CNTRYID
+# 3. Appliquer nettoyage (avant split)
+ordinal_prep = OrdinalPreprocessor()
+categorical_prep = CategoricalPreprocessor()
 
----
+df = ordinal_prep.drop_redundant_variables(df)
+df = categorical_prep.drop_metadata_variables(df)
+df = categorical_prep.drop_redundant_variables(df)
+df = categorical_prep.group_isco_codes(df)
+df = ordinal_prep.create_composite_scores(df)
 
-### 🔵 PHASE 5 : ENCODAGE DES VARIABLES (à implémenter dans les classes)
+# 4. Split train/val/test
+X_train, X_val, X_test, y_train, y_val, y_test = split_train_val_test(df)
 
-#### ☐ 5.1 - `encode_ordinal_variables(df: pd.DataFrame, mapping_dict: dict = None) -> pd.DataFrame`
-**Objectif** : Encoder les variables ordinales en préservant l'ordre
-- Utiliser OrdinalEncoder de sklearn
-- Créer mappings explicites pour échelles Likert, fréquences
-- Exemple : {"Never": 0, "Rarely": 1, "Sometimes": 2, "Often": 3, "Always": 4}
-- Stocker encoders dans `self.encoders`
-- **Output** : DataFrame avec ordinales encodées en int
+# 5. Appliquer transformations (fit sur train)
+X_train, X_val, X_test = ordinal_prep.impute_knn(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.impute_mode(X_train, X_val, X_test)
+X_train, X_val, X_test = ordinal_prep.winsorize_outliers(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.group_rare_categories(X_train, X_val, X_test)
+X_train, X_val, X_test = ordinal_prep.encode_ordinal_variables(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.encode_binary_variables(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.onehot_encode_low_cardinality(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.frequency_encode_high_cardinality(X_train, X_val, X_test)
+X_train, X_val, X_test = ordinal_prep.standardize_variables(X_train, X_val, X_test)
 
-#### ☐ 5.2 - `encode_binary_categorical(df: pd.DataFrame, vars_list: list) -> pd.DataFrame`
-**Objectif** : Encoder variables catégorielles binaires
-- Pour variables avec exactement 2 modalités (ex: Gender, OECD Yes/No)
-- Encoder en 0/1 avec LabelEncoder
-- **Output** : DataFrame avec binaires encodées
+# 6. Validation
+validation_report = validate_preprocessing(df, X_train, target='MathScore')
+preprocessing_report = generate_preprocessing_report(df, X_train, ordinal_prep, categorical_prep)
+```
 
-#### ☐ 5.3 - `onehot_encode_low_cardinality(df: pd.DataFrame, max_categories: int = 10) -> pd.DataFrame`
-**Objectif** : One-Hot Encoding pour variables à faible cardinalité
-- Pour variables catégorielles avec ≤ 10 modalités
-- Utiliser pd.get_dummies ou OneHotEncoder
-- Nommer colonnes : `var_name_category`
-- **Output** : DataFrame avec colonnes one-hot créées
-
-#### ☐ 5.4 - `target_encode_high_cardinality(df: pd.DataFrame, vars_list: list) -> pd.DataFrame`
-**Objectif** : Target Encoding pour variables à haute cardinalité
-- Pour variables avec > 10 modalités (CNT, langues, etc.)
-- Encoder par moyenne de MathScore pour chaque catégorie
-- Ajouter régularisation (smoothing) pour catégories rares
-- Attention au data leakage : utiliser cross-validation
-- **Output** : DataFrame avec target encoding appliqué
-
-#### ☐ 5.5 - `frequency_encode_categorical(df: pd.DataFrame, vars_list: list) -> pd.DataFrame`
-**Objectif** : Frequency Encoding (alternative au Target Encoding)
-- Encoder par fréquence d'apparition de chaque catégorie
-- Moins risqué que target encoding (pas de leakage)
-- **Output** : DataFrame avec frequency encoding appliqué
+**Sous-tâches** :
+- Exécuter pipeline complet ci-dessus
+- Valider absence NaN après preprocessing
+- Vérifier MathScore non modifié
+- Visualiser distributions avant/après
+- Comparer statistiques descriptives
+- **Output** : Notebook validation + rapport
 
 ---
 
-### 🔴 PHASE 6 : VALIDATION ET CONTRÔLE QUALITÉ (à implémenter dans les classes)
+### 🟣 PHASE 4 : UTILISATION ET EXPORT
 
-#### ☐ 6.1 - `validate_no_missing_after_preprocessing(df: pd.DataFrame) -> bool`
-**Objectif** : Vérifier qu'il n'y a plus de valeurs manquantes
-- Compter les NaN restants
-- Lever une exception si NaN détectés
-- **Output** : True si OK, raise ValueError sinon
+#### [] 4.1 - Créer script d'utilisation `preprocessing/run_preprocessing.py`
+**Objectif** : Script principal pour lancer le preprocessing complet
 
-#### ☐ 6.2 - `validate_dtypes_after_encoding(df: pd.DataFrame) -> pd.DataFrame`
-**Objectif** : Vérifier les types de données après encodage
-- Ordinales encodées → int ou float
-- Catégorielles encodées → int ou float
-- Pas de type 'object' sauf si voulu
-- **Output** : DataFrame de validation avec [column, expected_dtype, actual_dtype, status]
+**Sous-tâches** :
+```python
+from classes.ordinal_preprocessor import OrdinalPreprocessor
+from classes.categorical_preprocessor import CategoricalPreprocessor
+from utils.preprocessing_utils import *
+import pandas as pd
 
-#### ☐ 6.3 - `check_target_variable_unchanged(df_before: pd.DataFrame, df_after: pd.DataFrame) -> bool`
-**Objectif** : Vérifier que MathScore n'a pas été modifié
-- Comparer MathScore avant et après preprocessing
-- Lever exception si différences détectées
-- **Output** : True si identique, raise ValueError sinon
+# Charger données
+df = pd.read_csv('data/X_train.csv')
+df_before = df.copy()
 
-#### ☐ 6.4 - `generate_preprocessing_report(df_before: pd.DataFrame, df_after: pd.DataFrame) -> dict`
-**Objectif** : Générer un rapport de preprocessing
-- Nombre de variables avant/après
-- Variables supprimées et raison
-- Variables créées (one-hot, indicatrices missing)
-- Statistiques d'encodage
-- **Output** : Dict avec toutes les métadonnées
+# 1. Remove high missing
+df = remove_high_missing_vars(df, threshold=0.5)
 
-#### ☐ 6.5 - `detect_data_leakage_risk(df: pd.DataFrame) -> list`
-**Objectif** : Détecter les risques de data leakage
-- Identifier si target encoding fait sans CV
-- Identifier si imputation utilise statistiques globales
-- Identifier si normalisation faite sur tout le dataset
-- **Output** : Liste des warnings de leakage potentiel
+# 2. Nettoyage (avant split)
+ordinal_prep = OrdinalPreprocessor()
+categorical_prep = CategoricalPreprocessor()
+
+df = ordinal_prep.drop_redundant_variables(df)
+df = categorical_prep.drop_metadata_variables(df)
+df = categorical_prep.drop_redundant_variables(df)
+df = categorical_prep.group_isco_codes(df)
+df = ordinal_prep.create_composite_scores(df)
+
+# 3. Split
+X_train, X_val, X_test, y_train, y_val, y_test = split_train_val_test(df)
+
+# 4. Transformations (fit sur train)
+X_train, X_val, X_test = ordinal_prep.impute_knn(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.impute_mode(X_train, X_val, X_test)
+X_train, X_val, X_test = ordinal_prep.winsorize_outliers(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.group_rare_categories(X_train, X_val, X_test)
+X_train, X_val, X_test = ordinal_prep.encode_ordinal_variables(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.encode_binary_variables(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.onehot_encode_low_cardinality(X_train, X_val, X_test)
+X_train, X_val, X_test = categorical_prep.frequency_encode_high_cardinality(X_train, X_val, X_test)
+X_train, X_val, X_test = ordinal_prep.standardize_variables(X_train, X_val, X_test)
+
+# 5. Sauvegarder preprocessors
+ordinal_prep.save('models/ordinal_preprocessor.pkl')
+categorical_prep.save('models/categorical_preprocessor.pkl')
+
+# 6. Sauvegarder datasets
+X_train.to_csv('data/processed/X_train_preprocessed.csv', index=False)
+X_val.to_csv('data/processed/X_val_preprocessed.csv', index=False)
+X_test.to_csv('data/processed/X_test_preprocessed.csv', index=False)
+y_train.to_csv('data/processed/y_train.csv', index=False)
+y_val.to_csv('data/processed/y_val.csv', index=False)
+y_test.to_csv('data/processed/y_test.csv', index=False)
+
+# 7. Générer rapport
+report = generate_preprocessing_report(df_before, X_train, ordinal_prep, categorical_prep)
+```
+
+#### [] 4.2 - Créer notebook démo `preprocessing/03_demo_preprocessing.ipynb`
+**Objectif** : Démonstration complète du preprocessing
+
+**Sous-tâches** :
+- Charger données brutes
+- Montrer étape par étape chaque transformation
+- Visualiser impact de chaque étape
+- Afficher statistiques avant/après
+- Sauvegarder résultats finaux
+- **Output** : Notebook démo commenté
+
 
 ---
 
-### 🟣 PHASE 7 : PIPELINE ET SAUVEGARDE (à implémenter dans les classes)
+## 🎯 INSIGHTS CLÉS DE L'ANALYSE EDA (Synthèse Phase 1.10)
 
-#### ☐ 7.1 - `create_preprocessing_pipeline(steps: list) -> Pipeline`
-**Objectif** : Créer un pipeline sklearn réutilisable
-- Enchaîner les transformations dans l'ordre
-- Utiliser ColumnTransformer pour appliquer transformations par type
-- **Output** : Pipeline sklearn fitted
+### 💡 Découvertes Majeures
 
-#### ☐ 7.2 - `save_encoders_and_mappings(filepath: str) -> None`
-**Objectif** : Sauvegarder les encoders pour réutilisation
-- Pickler les OrdinalEncoder, LabelEncoder, OneHotEncoder
-- Sauvegarder les mappings de référence
-- Sauvegarder les listes de variables par type
-- **Output** : Fichier .pkl
+1. **Explosion de Dimensionnalité Évitée**
+   - **AVANT** : ~2093 features après one-hot encoding
+   - **APRÈS** : ~224 features avec scénario conservateur
+   - **GAIN** : -89% de features (-1869 features)
+   - **Impact principal** : Regroupement ISCO (620 → 10 catégories) = -97% features catégorielles
 
-#### ☐ 7.3 - `export_preprocessed_data(df: pd.DataFrame, filepath: str) -> None`
-**Objectif** : Exporter le dataset préprocessé
-- Sauvegarder en CSV ou Parquet
-- Inclure métadonnées dans un fichier séparé
-- **Output** : Fichiers data + metadata
+2. **Métadonnées Non Prédictives**
+   - 40% des variables catégorielles sont des métadonnées administratives
+   - Suppression de 12 variables avec risque ZÉRO
+   - Variables : Options questionnaires, identifiants admin, effort post-test
 
-#### ☐ 7.4 - `transform_new_data(df_new: pd.DataFrame) -> pd.DataFrame`
-**Objectif** : Appliquer le preprocessing à de nouvelles données
-- Charger les encoders sauvegardés
-- Appliquer les mêmes transformations
-- Gérer les nouvelles catégories inconnues
-- **Output** : DataFrame transformé
+3. **Redondances Structurelles Identifiées**
+   - 7 variables ordinales redondantes (doublons ISCED, ressources numériques)
+   - 7 variables catégorielles redondantes (langues, dates, professions)
+   - Opportunité de créer 2 scores composites (support parental, support enseignant)
 
+4. **Scénario CONSERVATEUR Recommandé**
+   - Phases 1-2 : Réduction 166 → 138 variables (-16.9%)
+   - Risque MINIMAL validé par analyses multiples
+   - Timeline : IMMÉDIAT (cette semaine)
+   - Validation empirique Phase 3 (COVID, TIC) : Semaine prochaine
+
+5. **Variables Critiques à Conserver** (Validées littérature + analyses)
+   - ESCS, HISEI, ICTRES : Top importance systématique
+   - Gender, IMMIG, GRADE : Sociodémographiques essentiels
+   - IC184, METASPAM, COMPETE : Spécifiques mathématiques
+
+6. **Pipeline Validé par Littérature**
+   - KNN imputation (k=5) pour continues/ordinales
+   - Mode imputation pour catégorielles
+   - StandardScaler après encoding
+   - Feature selection hybride (RFE + MI) → ~20-35 features
+   - Cross-validation 5-fold pour validation
+
+### 📊 Ordre des Transformations (CRITIQUE pour éviter Data Leakage)
+
+**SÉQUENCE STRICTE À RESPECTER** :
+1. Remove PV*/WLE* (avant tout)
+2. Remove high missing >50%
+3. Clean variables (Phases 1-2)
+4. **SPLIT TRAIN/VAL/TEST** ← Point critique
+5. Imputation (fit train, transform val/test)
+6. Outliers treatment (fit train, transform val/test)
+7. Encoding (fit train, transform val/test)
+8. Standardization (fit train, transform val/test)
+9. Feature selection (train only)
+
+### 🎓 Recommandations Issues de 4 Études Scientifiques
+- **Imputation** : KNN (k=5) > Simple mean/median
+- **Encoding haute cardinalité** : Frequency > Target (évite leakage)
+- **Standardisation** : Obligatoire pour convergence modèles
+- **Feature selection** : RFE + MI > univarié seul
+- **Validation** : Stratified 5-fold CV
+- **Split** : 60/20/20 avec stratification sur target bins
+
+### ⚡ Quick Wins Identifiés
+1. **Gain immédiat** : Supprimer 22 variables métadonnées/redondances (-13.3% variables)
+   - 5 ordinales (ST005, ST007, ST253, ST255, ST097)
+   - 10 métadonnées catégorielles (Options + identifiants admin)
+   - 7 redondances catégorielles (langues, dates, professions)
+2. **Gain massif** : Regrouper ISCO (-1860 features potentielles → -97% features catégorielles)
+3. **Gain consolidation** : 2 scores composites (-2 variables ordinales)
+4. **Total Phase 1-2** : 166 → 142 variables (-14.5%), ~2093 → ~224 features (-89%)
+5. **Note Hackathon** : PV*/WLE* gardés pour performance maximale
 
 ---
 
