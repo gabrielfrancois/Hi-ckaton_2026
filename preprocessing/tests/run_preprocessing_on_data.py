@@ -107,7 +107,7 @@ def impute_remaining_nulls(df: pl.DataFrame) -> pl.DataFrame:
     return df
 
 
-def preprocess_dataset(input_filename: str, output_prefix: str, ordinal_prep=None, categorical_prep=None, is_train=True):
+def preprocess_dataset(input_filename: str, output_prefix: str, ordinal_prep=None, categorical_prep=None, is_train=True, high_missing_cols=None):
     """
     Pipeline complet de preprocessing pour un dataset
 
@@ -117,9 +117,10 @@ def preprocess_dataset(input_filename: str, output_prefix: str, ordinal_prep=Non
         ordinal_prep: Preprocessor ordinal pré-entraîné (None pour train, fitted pour test)
         categorical_prep: Preprocessor catégoriel pré-entraîné (None pour train, fitted pour test)
         is_train: True si c'est le dataset d'entraînement, False pour test
+        high_missing_cols: Liste des colonnes à supprimer (fort taux de missing depuis train)
 
     Returns:
-        tuple: (df_preprocessed, report, ordinal_prep, categorical_prep)
+        tuple: (df_preprocessed, report, ordinal_prep, categorical_prep, high_missing_cols)
     """
 
     print("\n" + "="*80)
@@ -168,7 +169,7 @@ def preprocess_dataset(input_filename: str, output_prefix: str, ordinal_prep=Non
 
         # 5. Supprimer variables avec >50% missing (après création des composites)
         print("\n🧹 Suppression variables avec >50% missing...")
-        df = remove_high_missing_vars(df, threshold=0.5)
+        df, high_missing_cols = remove_high_missing_vars(df, threshold=0.5)
 
         # Mettre à jour les listes
         ordinal_vars_present = [v for v in ordinal_prep.ordinal_vars if v in df.columns]
@@ -205,9 +206,21 @@ def preprocess_dataset(input_filename: str, output_prefix: str, ordinal_prep=Non
         print(f"   Regroupements ISCO: {categorical_prep.isco_mapping}")
     else:
         # Pour le test set, appliquer les transformations déjà apprises
-        print("\n🔢 Application des transformations ordinales (depuis train)...")
-        df = ordinal_prep.transform(df)
+        # IMPORTANT: Appliquer dans le MÊME ordre que le train set
 
+        # 1. Créer les scores composites (AVANT de supprimer les high-missing)
+        print("\n🔢 Création des scores composites (depuis train)...")
+        df = ordinal_prep.create_composite_scores(df)
+
+        # 2. Supprimer les mêmes colonnes que le train
+        print("\n🧹 Suppression des mêmes variables que le train set...")
+        df, _ = remove_high_missing_vars(df, columns_to_drop=high_missing_cols)
+
+        # 3. Application des autres transformations ordinales
+        print("\n🔢 Application des transformations ordinales (depuis train)...")
+        df = ordinal_prep.drop_redundant_variables(df)
+
+        # 4. Application des transformations catégorielles
         print("\n🏷️  Application des transformations catégorielles (depuis train)...")
         df = categorical_prep.transform(df)
 
@@ -234,7 +247,7 @@ def preprocess_dataset(input_filename: str, output_prefix: str, ordinal_prep=Non
 
     print("\n" + "="*80)
 
-    return df, report, ordinal_prep, categorical_prep
+    return df, report, ordinal_prep, categorical_prep, high_missing_cols
 
 
 def main():
@@ -245,7 +258,7 @@ def main():
     print("TRAIN SET")
     print("🚂 " * 20 + "\n")
 
-    df_train, report_train, ordinal_prep, categorical_prep = preprocess_dataset(
+    df_train, report_train, ordinal_prep, categorical_prep, high_missing_cols = preprocess_dataset(
         input_filename='X_numerical_grouped_cleaned_train.csv',
         output_prefix='X_train',
         is_train=True
@@ -256,12 +269,13 @@ def main():
     print("TEST SET")
     print("🧪 " * 20 + "\n")
 
-    df_test, report_test, _, _ = preprocess_dataset(
+    df_test, report_test, _, _, _ = preprocess_dataset(
         input_filename='X_numerical_grouped_cleaned_test.csv',
         output_prefix='X_test',
         ordinal_prep=ordinal_prep,
         categorical_prep=categorical_prep,
-        is_train=False
+        is_train=False,
+        high_missing_cols=high_missing_cols
     )
 
     return df_train, df_test, report_train, report_test

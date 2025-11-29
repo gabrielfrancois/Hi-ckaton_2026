@@ -7,33 +7,46 @@ import numpy as np
 from typing import Tuple, Dict
 
 
-def remove_high_missing_vars(df: pl.DataFrame, threshold: float = 0.5) -> pl.DataFrame:
+def remove_high_missing_vars(df: pl.DataFrame, threshold: float = 0.5, columns_to_drop: list = None) -> Tuple[pl.DataFrame, list]:
     """
     Supprimer variables avec >50% missing.
 
     Args:
         df: DataFrame Polars à nettoyer
         threshold: Seuil de pourcentage de valeurs manquantes (défaut 0.5 = 50%)
+        columns_to_drop: Liste de colonnes à supprimer (si fournie, ignore threshold et supprime ces colonnes)
 
     Returns:
-        DataFrame sans les variables à fort taux de missing
+        Tuple (DataFrame sans les variables à fort taux de missing, liste des colonnes supprimées)
     """
-    # Calculer le pourcentage de missing pour chaque colonne
-    missing_stats = df.select([
-        ((pl.col(col).is_null().sum() / pl.len()) > threshold).alias(col)
-        for col in df.columns
-    ])
+    if columns_to_drop is not None:
+        # Mode "test": supprimer les colonnes spécifiées
+        cols_present = [col for col in columns_to_drop if col in df.columns]
+        print(f"Suppression de {len(cols_present)} variables (depuis train)")
 
-    # Identifier colonnes à supprimer
-    high_missing = [col for col in df.columns if missing_stats[col][0]]
+        if cols_present:
+            print(f"Variables supprimées: {cols_present[:10]}{'...' if len(cols_present) > 10 else ''}")
+            df = df.drop(cols_present)
 
-    print(f"Suppression de {len(high_missing)} variables avec >{threshold*100}% missing")
+        return df, cols_present
+    else:
+        # Mode "train": calculer et supprimer les colonnes avec fort taux de missing
+        # Calculer le pourcentage de missing pour chaque colonne
+        missing_stats = df.select([
+            ((pl.col(col).is_null().sum() / pl.len()) > threshold).alias(col)
+            for col in df.columns
+        ])
 
-    if high_missing:
-        print(f"Variables supprimées: {high_missing[:10]}{'...' if len(high_missing) > 10 else ''}")
-        df = df.drop(high_missing)
+        # Identifier colonnes à supprimer
+        high_missing = [col for col in df.columns if missing_stats[col][0]]
 
-    return df
+        print(f"Suppression de {len(high_missing)} variables avec >{threshold*100}% missing")
+
+        if high_missing:
+            print(f"Variables supprimées: {high_missing[:10]}{'...' if len(high_missing) > 10 else ''}")
+            df = df.drop(high_missing)
+
+        return df, high_missing
 
 
 def split_train_val_test(df: pl.DataFrame, target: str = 'MathScore',
