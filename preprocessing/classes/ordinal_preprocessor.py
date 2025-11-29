@@ -92,6 +92,34 @@ class OrdinalPreprocessor:
 
         return df
 
+    def impute_median_simple(self, df: pl.DataFrame) -> pl.DataFrame:
+        """
+        Imputer avec médiane (version simple pour avant split).
+
+        Args:
+            df: DataFrame à imputer
+
+        Returns:
+            DataFrame imputé
+        """
+        ordinal_cols = [col for col in self.ordinal_vars if col in df.columns]
+
+        if not ordinal_cols:
+            return df
+
+        for col in ordinal_cols:
+            # Calculer la médiane
+            median_value = df.select(pl.col(col).median()).item()
+
+            if median_value is not None:
+                # Imputer avec fill_null
+                df = df.with_columns(pl.col(col).fill_null(median_value))
+            else:
+                # Si pas de médiane (colonne entièrement nulle), remplir avec 0
+                df = df.with_columns(pl.col(col).fill_null(0))
+
+        return df
+
     def impute_knn(self, df_train: pl.DataFrame, df_val: pl.DataFrame,
                    df_test: pl.DataFrame, k: int = 5) -> Tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame]:
         """
@@ -257,6 +285,9 @@ class OrdinalPreprocessor:
                 if var in self.ordinal_vars:
                     self.ordinal_vars.remove(var)
             self.ordinal_vars.append(composite_name)
+
+        # Imputation simple avant split (médiane)
+        df = self.impute_median_simple(df)
 
         self.is_fitted = True
 

@@ -129,12 +129,56 @@ class CategoricalPreprocessor:
 
                 # Extraire le premier chiffre avec Polars
                 df = df.with_columns(
-                    pl.col(var).cast(pl.Utf8).str.slice(0, 1).cast(pl.Int64, strict=False).alias(grouped_var)
+                    pl.col(var).cast(pl.Utf8).str.slice(0, 1).str.to_integer(strict=False).alias(grouped_var)
                 )
                 df = df.drop(var)
 
                 if not self.is_fitted:
                     self.isco_mapping[var] = grouped_var
+
+        return df
+
+    def impute_mode_simple(self, df: pl.DataFrame) -> pl.DataFrame:
+        """
+        Imputer avec mode (version simple pour avant split).
+
+        Args:
+            df: DataFrame à imputer
+
+        Returns:
+            DataFrame imputé
+        """
+        categorical_cols = [col for col in self.categorical_vars if col in df.columns]
+
+        if not categorical_cols:
+            return df
+
+        for col in categorical_cols:
+            # Vérifier le type de la colonne
+            dtype = df[col].dtype
+
+            # Si c'est une colonne Int64 (comme OCOD*_grouped), utiliser le mode en Int64
+            if dtype in [pl.Int64, pl.Int32]:
+                mode_series = df.select(pl.col(col).mode()).to_series()
+
+                if len(mode_series) > 0 and mode_series[0] is not None:
+                    mode_value = mode_series[0]
+                    self.mode_values[col] = mode_value
+                    df = df.with_columns(pl.col(col).fill_null(mode_value))
+                else:
+                    # Si pas de mode, remplir avec -1 pour les colonnes numériques
+                    df = df.with_columns(pl.col(col).fill_null(-1))
+            else:
+                # Pour les colonnes String : mode ou "Unknown"
+                mode_series = df.select(pl.col(col).mode()).to_series()
+
+                if len(mode_series) > 0 and mode_series[0] is not None:
+                    mode_value = mode_series[0]
+                    self.mode_values[col] = mode_value
+                    df = df.with_columns(pl.col(col).fill_null(mode_value))
+                else:
+                    # Si pas de mode (colonne entièrement nulle), remplir avec "Unknown"
+                    df = df.with_columns(pl.col(col).fill_null("Unknown"))
 
         return df
 
@@ -390,6 +434,9 @@ class CategoricalPreprocessor:
             if original_var in self.categorical_vars:
                 self.categorical_vars.remove(original_var)
             self.categorical_vars.append(grouped_var)
+
+        # Imputation simple avant split
+        df = self.impute_mode_simple(df)
 
         self.is_fitted = True
 
