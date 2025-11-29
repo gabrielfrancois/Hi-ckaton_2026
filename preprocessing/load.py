@@ -1,9 +1,17 @@
 from helper_functions.print import *
+
 import polars as pl 
 import polars.selectors as cs
 
-def load_csv(path:str):
-    return pl.read_csv(path, ignore_errors=True)
+def load_csv(path:str, display_columns_name:bool=False):
+    print(orange("-"*10 + f" load : {path} " + "-"*10))
+    df = pl.read_csv(path, ignore_errors=True)
+    if display_columns_name:
+        for i, (col_name, dtype) in enumerate(df.schema.items()):
+            print(green("\n--- Column Types ---"))
+            print(cyan(f"{col_name}: {dtype}"))
+        
+    return df
 
 def select_numerical(df:pl.DataFrame):
     numerical = """AGE
@@ -156,14 +164,21 @@ def select_grouped(df:pl.DataFrame):
             """.split()
     return df.select(grouped)
 
+
+df = load_csv("X_train.csv") # shape : (1172086, 307)
+y_test = load_csv("y_train.csv")
+df_numerical = select_numerical(df) # shape : (1172086, 135) all columns include null values
+df_grouped = select_grouped(df) # shape : (1172086, 6) all columns include null values
+
+
+
 if __name__ == "__main__":
-    print(orange("prereocessing..."))
-    df = load_csv("X_train.csv")
-    # print(orange("\n--- Column Types ---"))
-    # for i, (col_name, dtype) in enumerate(df.schema.items()):
-    #     print(cyan(f"{col_name}: {dtype}"))
-    df_numerical = select_numerical(df)
-    df_grouped = select_grouped(df)
+    print(orange("-"*10 + " prereocessing " + "-"*10))
+    df = load_csv("X_train.csv") # shape : (1172086, 307)
+    df_numerical = select_numerical(df) # shape : (1172086, 135)
+    df_grouped = select_grouped(df) # shape : (1172086, 6)
+    
+    
 
  
     
