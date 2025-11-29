@@ -30,23 +30,23 @@ Créer une classe `OrdinalPreprocessor`et `CategoricalPreprocessor` avec des mé
 ### 🔵 PHASE 1 : ANALYSE EXPLORATOIRE (EDA) - Dans Jupyter Notebook
 **Objectif** : Explorer les données réelles pour comprendre les distributions et guider le preprocessing
 
-#### ☐ 1.1 - Créer notebook `preprocessing/01_eda_ordinal_categorical.ipynb`
+#### [V] 1.1 - Créer notebook `preprocessing/01_eda_ordinal_categorical.ipynb`
 - Charger échantillon de `data/X_train.csv` (10 000-50 000 lignes)
 - Charger dictionnaires de référence du `data/Glossaire.xlsx`
 
-#### ☐ 1.2 - Identifier les variables ordinales et catégorielles dans les données réelles
-- Utiliser le Glossaire.xlsx pour classifier les variables
+#### [V] 1.2 - Identifier les variables ordinales et catégorielles dans les données réelles
+- Utiliser le classification_variable.xlsx pour classifier les variables
 - Créer listes: `ordinal_vars` (96 vars) et `categorical_vars` (70 vars)
 - Vérifier cohérence avec la structure réelle du dataset
 
-#### ☐ 1.3 - Analyser distributions des variables ordinales
+#### [V] 1.3 - Analyser distributions des variables ordinales
 - Cardinalité (nombre de valeurs uniques)
 - % de valeurs manquantes par variable
 - Détecter types d'échelles (Likert, fréquence, quantité)
 - Identifier valeurs aberrantes ou codes spéciaux (-99, 97, 98, 99)
 - **Visualisations** : histogrammes, boxplots
 
-#### ☐ 1.4 - Analyser distributions des variables catégorielles
+#### [V] 1.4 - Analyser distributions des variables catégorielles
 - Cardinalité par variable (faible < 10, moyenne 10-50, haute > 50)
 - % de valeurs manquantes
 - Identifier catégories rares (< 1% des observations)
@@ -54,33 +54,44 @@ Créer une classe `OrdinalPreprocessor`et `CategoricalPreprocessor` avec des mé
 - **Focus spécial** : STRATUM (1316), OCOD (620), CNT (80)
 - **Visualisations** : barplots, treemaps pour haute cardinalité
 
-#### ☐ 1.5 - Détecter variables redondantes
+#### [V] 1.5 - Détecter variables redondantes / corrélées
 - Calculer corrélations Spearman pour paires de variables ordinales
 - Calculer Cramér's V pour paires de variables catégorielles
 - Vérifier redondance CNT vs CNTRYID
 - **Output** : Liste de variables à supprimer
 
-#### ☐ 1.6 - Analyser patterns de valeurs manquantes
+#### [V] 1.6 - Analyser patterns de valeurs manquantes
 - Matrice de corrélation des valeurs manquantes
 - Identifier si missing est informatif (MCAR, MAR, MNAR)
 - Décider stratégie d'imputation par variable
 
-#### ☐ 1.7 - Documenter conclusions EDA
+#### [V] 1.7 - Documenter conclusions EDA
 - Créer rapport markdown avec décisions de preprocessing
 - Lister variables à supprimer, à regrouper, à encoder
 - Définir stratégies d'imputation par type de variable
 - **Output** : `preprocessing/eda_conclusions.md`
+
+#### [V] 1.8 - Analyser les colonnes d'après leurs noms et déduire ce qu'il faut supprimer / fusionner
+- **Output** : `preprocessing/analysis/categorical_variables`, `preprocessing/analysis/ordinal_variables`
+
+#### [V] 1.9 - Analyser des papiers de recherche sur ce sujet, en déduire les méthodes recommandées
+
+#### [] 1.10 - Faire une synthèse des recommandations et mettre à jour cette to do list
+- Synthèse à partir de `preprocessing/analysis/categorial_variables/RESUME_EXECUTIF_Analyse_Categorielles.md`, 
+`preprocessing/analysis/ordinal_variables/RESUME_EXECUTIF_Analyse_Ordinales.md`, 
+`preprocessing/analysis/analysis_from_pappers.md`et `preprocessing/01_eda_ordinal_categorical.ipynb`
+- Mettre à jour la suite de cette To Do List.
 
 ---
 
 ### 🟡 PHASE 2 : CRÉATION DES CLASSES DE PREPROCESSING (dans `classes/`)
 **Objectif** : Implémenter les classes basées sur les conclusions de l'EDA
 
-#### ☐ 2.1 - Créer `classes/ordinal_preprocessor.py`
+#### [] 2.1 - Créer `classes/ordinal_preprocessor.py`
 - Classe `OrdinalPreprocessor` avec méthodes pour les 96 variables ordinales
 - Méthodes basées sur les conclusions de l'EDA (Phase 1)
 
-#### ☐ 2.2 - Créer `classes/categorical_preprocessor.py`
+#### [] 2.2 - Créer `classes/categorical_preprocessor.py`
 - Classe `CategoricalPreprocessor` avec méthodes pour les 70 variables catégorielles
 - Méthodes basées sur les conclusions de l'EDA (Phase 1)
 
@@ -88,43 +99,7 @@ Créer une classe `OrdinalPreprocessor`et `CategoricalPreprocessor` avec des mé
 
 ### 🟢 PHASE 3 : GESTION DES VALEURS MANQUANTES (à implémenter dans les classes)
 
-#### ☐ 3.1 - `flag_missing_values(df: pd.DataFrame, missing_indicators: list) -> pd.DataFrame`
-**Objectif** : Identifier et harmoniser les codes de valeurs manquantes
-- Codes courants PISA : -99, -98, -97, 97, 98, 99, "N/A", "Missing", ""
-- Remplacer tous par np.nan
-- Créer variables indicatrices si > 10% missing : `var_name_is_missing`
-- **Output** : DataFrame avec valeurs manquantes harmonisées + variables indicatrices
-
-#### ☐ 3.2 - `impute_ordinal_missing_median(df: pd.DataFrame, vars_list: list) -> pd.DataFrame`
-**Objectif** : Imputer variables ordinales par la médiane
-- Pour variables ordinales avec < 20% missing
-- Imputation par médiane (préserve le caractère ordinal)
-- Option : imputation stratifiée par pays (CNT) si pertinent
-- **Output** : DataFrame avec ordinales imputées
-
-#### ☐ 3.3 - `impute_ordinal_missing_mode(df: pd.DataFrame, vars_list: list) -> pd.DataFrame`
-**Objectif** : Imputer variables ordinales par le mode
-- Pour variables ordinales très déséquilibrées
-- Imputation par mode (valeur la plus fréquente)
-- **Output** : DataFrame avec ordinales imputées
-
-#### ☐ 3.4 - `impute_categorical_missing_mode(df: pd.DataFrame, vars_list: list) -> pd.DataFrame`
-**Objectif** : Imputer variables catégorielles par le mode
-- Pour variables catégorielles avec < 20% missing
-- Imputation par mode global ou stratifié
-- **Output** : DataFrame avec catégorielles imputées
-
-#### ☐ 3.5 - `create_missing_category(df: pd.DataFrame, vars_list: list) -> pd.DataFrame`
-**Objectif** : Créer une catégorie "Missing" pour variables catégorielles
-- Pour variables catégorielles avec > 20% missing
-- Ajouter une modalité explicite "Unknown" ou "Missing"
-- **Output** : DataFrame avec nouvelle catégorie
-
-#### ☐ 3.6 - `drop_high_missing_variables(df: pd.DataFrame, threshold: float = 0.5) -> tuple`
-**Objectif** : Supprimer variables avec trop de valeurs manquantes
-- Identifier variables avec > 50% missing (ou seuil personnalisé)
-- Les exclure du dataset
-- **Output** : (DataFrame nettoyé, liste des variables supprimées)
+Stratégie à déterminer d'après la phase 1.
 
 ---
 
@@ -276,30 +251,6 @@ Créer une classe `OrdinalPreprocessor`et `CategoricalPreprocessor` avec des mé
 - Gérer les nouvelles catégories inconnues
 - **Output** : DataFrame transformé
 
----
-
-## 🎯 ORDRE DE PRIORITÉ D'EXÉCUTION
-
-### Phase 1 - EDA dans Jupyter Notebook
-1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7
-
-### Phase 2 - Créer les classes
-2.1 (OrdinalPreprocessor) + 2.2 (CategoricalPreprocessor)
-
-### Phase 3 - Gestion valeurs manquantes
-3.1 → 3.2 → 3.3 → 3.4 → 3.5 → 3.6
-
-### Phase 4 - Traitement catégories rares
-4.1 → 4.2 → 4.3 → 4.4
-
-### Phase 5 - Encodage
-5.1 → 5.2 → 5.3 → (5.4 OU 5.5)
-
-### Phase 6 - Validation
-6.1 → 6.2 → 6.3 → 6.4 → 6.5
-
-### Phase 7 - Pipeline et sauvegarde
-7.1 → 7.2 → 7.3 → 7.4
 
 ---
 
@@ -331,23 +282,6 @@ Créer une classe `OrdinalPreprocessor`et `CategoricalPreprocessor` avec des mé
 
 ---
 
-## 📚 LIBRAIRIES NÉCESSAIRES
-
-```python
-import pandas as pd
-import numpy as np
-from sklearn.preprocessing import (
-    OrdinalEncoder, LabelEncoder, OneHotEncoder, StandardScaler
-)
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
-from category_encoders import TargetEncoder
-import pickle
-import json
-```
-
----
-
 ## 📊 LIVRABLES ATTENDUS
 
 1. **Classe Python** : `OrdinalCategoricalPreprocessor` avec toutes les méthodes
@@ -355,7 +289,6 @@ import json
 3. **Dataset preprocessé** : Fichier final prêt pour modélisation
 4. **Documentation** : Rapport de preprocessing détaillé
 5. **Encoders sauvegardés** : Fichiers .pkl pour réutilisation
-6. **Tests unitaires** : Validation de chaque méthode
 
 ---
 
@@ -377,7 +310,5 @@ import json
 
 - Cette TODO list est **exhaustive mais flexible** : adapter selon les données réelles
 - Certaines méthodes peuvent être optionnelles selon les analyses de Phase 1
-- Prioriser la **qualité** sur la vitesse : un bon preprocessing = 80% du succès du modèle
+- Prioriser la **vitesse** sur la qualité : seulement quelques heures pour cet exercice!
 - **Documenter** toutes les décisions prises et les justifier
-
-**Prêt à commencer le développement ! 🚀**
