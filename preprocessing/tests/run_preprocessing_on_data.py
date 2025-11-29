@@ -36,6 +36,77 @@ def load_variable_lists():
     return ordinal_vars, categorical_vars
 
 
+def impute_remaining_nulls(df: pl.DataFrame) -> pl.DataFrame:
+    """
+    Imputer toutes les colonnes restantes qui contiennent des valeurs manquantes.
+
+    Stratégie:
+    - Colonnes numériques (Float64, Int64): imputation par la médiane
+    - Colonnes catégorielles (String, autres): imputation par le mode ou "Unknown"
+
+    Args:
+        df: DataFrame à imputer
+
+    Returns:
+        DataFrame sans valeurs manquantes
+    """
+    print("\n🔧 Imputation générique des valeurs manquantes restantes...")
+
+    # Identifier les colonnes avec des nulls
+    cols_with_nulls = [col for col in df.columns if df[col].null_count() > 0]
+
+    if not cols_with_nulls:
+        print("   ✅ Aucune valeur manquante détectée")
+        return df
+
+    print(f"   Colonnes avec NaNs: {len(cols_with_nulls)}")
+
+    numeric_imputed = 0
+    categorical_imputed = 0
+
+    for col in cols_with_nulls:
+        dtype = df[col].dtype
+        null_count = df[col].null_count()
+
+        # Colonnes numériques: imputation par médiane
+        if dtype in [pl.Float64, pl.Float32, pl.Int64, pl.Int32]:
+            median_value = df.select(pl.col(col).median()).item()
+
+            if median_value is not None:
+                df = df.with_columns(pl.col(col).fill_null(median_value))
+                numeric_imputed += 1
+            else:
+                # Si pas de médiane (colonne entièrement nulle), remplir avec 0
+                df = df.with_columns(pl.col(col).fill_null(0))
+                numeric_imputed += 1
+
+        # Colonnes catégorielles: imputation par mode
+        else:
+            mode_series = df.select(pl.col(col).mode()).to_series()
+
+            if len(mode_series) > 0 and mode_series[0] is not None:
+                mode_value = mode_series[0]
+                df = df.with_columns(pl.col(col).fill_null(mode_value))
+                categorical_imputed += 1
+            else:
+                # Si pas de mode, remplir avec "Unknown"
+                df = df.with_columns(pl.col(col).cast(pl.Utf8).fill_null("Unknown"))
+                categorical_imputed += 1
+
+    print(f"   ✅ Imputation terminée:")
+    print(f"      - {numeric_imputed} colonnes numériques (médiane)")
+    print(f"      - {categorical_imputed} colonnes catégorielles (mode/Unknown)")
+
+    # Vérification finale
+    remaining_nulls = sum([df[col].null_count() for col in df.columns])
+    if remaining_nulls == 0:
+        print(f"   ✅ Plus aucune valeur manquante dans le dataset")
+    else:
+        print(f"   ⚠️  {remaining_nulls} valeurs manquantes restantes")
+
+    return df
+
+
 def main():
     """Pipeline complet de preprocessing"""
 
@@ -98,11 +169,14 @@ def main():
     print(f"   Variables supprimées: {categorical_prep.variables_to_drop}")
     print(f"   Regroupements ISCO: {categorical_prep.isco_mapping}")
 
-    # 7. Générer rapport
+    # 7. Imputation générique des colonnes restantes
+    df = impute_remaining_nulls(df)
+
+    # 8. Générer rapport
     print("\n📊 Génération du rapport de preprocessing...")
     report = generate_preprocessing_report(df_original, df, ordinal_prep, categorical_prep)
 
-    # 8. Sauvegarder le résultat
+    # 9. Sauvegarder le résultat
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"X_train_preprocessed_{timestamp}.csv"
     output_path = os.path.join(os.path.dirname(__file__), '../../data/', output_filename)
