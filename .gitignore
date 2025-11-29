@@ -1,2 +1,6 @@
 *.csv
 __pycache__
+data/
+.history/
+.DS_Store
+docs/
