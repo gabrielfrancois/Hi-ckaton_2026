@@ -25,25 +25,46 @@ from sklearn.model_selection import GridSearchCV, KFold
 from sklearn.preprocessing import StandardScaler
 
 
-def load_preprocessed_data(data_path: str) -> Tuple[pl.DataFrame, pl.Series]:
+def load_preprocessed_data(data_path: str, target_path: str = None) -> Tuple[pl.DataFrame, pl.Series]:
     """
-    Charger les données préprocessées et séparer features/target.
+    Charger les données préprocessées et la target.
 
     Args:
-        data_path: Chemin vers le fichier CSV préprocessé
+        data_path: Chemin vers le fichier CSV préprocessé (features)
+        target_path: Chemin vers le fichier CSV contenant MathScore (y_train.csv)
 
     Returns:
         Tuple (X, y) où X est le DataFrame des features et y la target
     """
     print("📂 Chargement des données préprocessées...")
-    df = pl.read_csv(data_path)
+    X = pl.read_csv(data_path)
 
-    # Séparer features et target
-    if 'MathScore' not in df.columns:
-        raise ValueError("La colonne 'MathScore' n'est pas présente dans le dataset!")
+    # Vérifier si MathScore est déjà présent dans X
+    if 'MathScore' in X.columns:
+        print("   ✅ MathScore trouvé dans le fichier préprocessé")
+        y = X.select('MathScore').to_series()
+        X = X.drop('MathScore')
+    else:
+        # Charger MathScore depuis y_train.csv
+        if target_path is None:
+            data_dir = os.path.dirname(data_path)
+            target_path = os.path.join(data_dir, 'y_train.csv')
 
-    y = df.select('MathScore').to_series()
-    X = df.drop('MathScore')
+        print(f"   📂 Chargement de MathScore depuis: {os.path.basename(target_path)}")
+        y_df = pl.read_csv(target_path)
+
+        # Vérifier que les dimensions correspondent
+        if len(y_df) != len(X):
+            raise ValueError(f"Dimensions incompatibles: X={len(X)} lignes, y={len(y_df)} lignes")
+
+        # Extraire la série MathScore
+        if 'MathScore' in y_df.columns:
+            y = y_df.select('MathScore').to_series()
+        else:
+            # Si le fichier n'a qu'une colonne sans nom ou nommée autrement
+            y = y_df.to_series(0)
+
+        print(f"   ✅ MathScore chargé avec succès")
 
     print(f"   Shape X: {X.shape}")
     print(f"   Shape y: {y.shape}")
