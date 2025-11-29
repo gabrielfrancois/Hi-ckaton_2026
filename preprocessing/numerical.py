@@ -73,12 +73,16 @@ def display_null(df:pl.DataFrame):
     """
     Just print the columns that include null value.
     """
+    nb_raw = df.shape[0]
     numericals_null = df.null_count()
     cols_with_nulls = [
         col for col in numericals_null.columns 
         if numericals_null[col][0]/nb_raw > 0
     ]
-    print(bold(f"remained null columns: \n {cols_with_nulls}"))
+    if cols_with_nulls:
+        print(bold(f"remained null columns: \n {cols_with_nulls}"))
+    else:
+        print(bold("No column containing null value left"))
     
 def handle_scores_and_timing(df: pl.DataFrame, cap_seconds:int=1800):
     """
@@ -168,6 +172,19 @@ def clean_other(df: pl.DataFrame, threshold: float = 0.05):
     return df
     
     
+# df_numerical = df_numerical.with_columns(
+#         pl.col(df_numerical.columns).cast(pl.Float64, strict=False)
+#     )
+
+# # Clean too empty columns
+# df_numerical = drop_sparse_columns(df_numerical)
+
+# # Replace nll data by -1 on the score/timing
+# df_numerical = handle_scores_and_timing(df_numerical)
+
+# # process others
+# df_numerical = clean_other(df_numerical)
+
 
 
 if __name__ == "__main__":
