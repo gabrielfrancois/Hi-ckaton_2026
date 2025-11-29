@@ -64,7 +64,7 @@ if __name__ == "__main__":
                                                          df_grouped=df_grouped_train,
                                                          df_numerical=df_numerical_train
                                                          )
-    output_filename = "X_numerical_grouped_cleaned_train.csv"
+    output_filename = "data/X_numerical_grouped_cleaned_train.csv"
     print(orange("-"*10 + f" Saving to {output_filename} " + "-"*10))
     X_numerical_grouped_cleaned_train.write_csv(output_filename)
     print(green(f"Saved {output_filename} successfully!"))
