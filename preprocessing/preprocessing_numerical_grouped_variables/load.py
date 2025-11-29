@@ -165,8 +165,8 @@ def select_grouped(df:pl.DataFrame):
     return df.select(grouped)
 
 
-df_train = load_csv("X_train.csv") # shape : (1172086, 307)
-# y_test = load_csv("y_train.csv")
+df_train = load_csv("../../data/X_train.csv") # shape : (1172086, 307)
+# y_test = load_csv("../../data/y_train.csv")
 df_numerical_train = select_numerical(df_train) # shape : (1172086, 135) all columns include null values
 df_grouped_train = select_grouped(df_train) # shape : (1172086, 6) all columns include null values
 
@@ -174,7 +174,7 @@ df_grouped_train = select_grouped(df_train) # shape : (1172086, 6) all columns i
 
 if __name__ == "__main__":
     print(orange("-"*10 + " prereocessing " + "-"*10))
-    df = load_csv("X_train.csv") # shape : (1172086, 307)
+    df = load_csv("../../data/X_train.csv") # shape : (1172086, 307)
     df_numerical = select_numerical(df) # shape : (1172086, 135)
     df_grouped = select_grouped(df) # shape : (1172086, 6)
     

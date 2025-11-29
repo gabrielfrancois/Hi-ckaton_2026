@@ -1,5 +1,5 @@
 from helper_functions.print import *
-from preprocessing.load import df_numerical_train
+from load import df_numerical_train
 
 import polars as pl 
 import polars.selectors as cs

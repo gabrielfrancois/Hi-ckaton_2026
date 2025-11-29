@@ -1,6 +1,6 @@
 from helper_functions.print import *
-from preprocessing.load import df_grouped_train
-from preprocessing.numerical import print_values, print_values_scope, display_null
+from load import df_grouped_train
+from numerical import print_values, print_values_scope, display_null
 
 import polars as pl 
 import polars.selectors as cs

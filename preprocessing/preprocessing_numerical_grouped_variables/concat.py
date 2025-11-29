@@ -1,7 +1,7 @@
-from preprocessing.grouped import df_grouped_cleaned_train
-from preprocessing.numerical import df_numerical_cleaned_train
+from grouped import df_grouped_cleaned_train
+from numerical import df_numerical_cleaned_train
 from helper_functions.print import *
-from preprocessing.load import df_numerical_train, df_grouped_train, df_train
+from load import df_numerical_train, df_grouped_train, df_train
 
 import polars as pl 
 import polars.selectors as cs
@@ -64,7 +64,7 @@ if __name__ == "__main__":
                                                          df_grouped=df_grouped_train,
                                                          df_numerical=df_numerical_train
                                                          )
-    output_filename = "data/X_numerical_grouped_cleaned_train.csv"
+    output_filename = "../../data/X_numerical_grouped_cleaned_train.csv"
     print(orange("-"*10 + f" Saving to {output_filename} " + "-"*10))
     X_numerical_grouped_cleaned_train.write_csv(output_filename)
     print(green(f"Saved {output_filename} successfully!"))
