@@ -210,9 +210,9 @@ if __name__ == "__main__":
     DATA_DIR = "data" 
     
     # Update to your specific timestamps
-    X_TRAIN_PATH = f"{DATA_DIR}/X_train_preprocessed_20251129_234423.csv" 
+    X_TRAIN_PATH = f"{DATA_DIR}/X_train_clean_no_leakage_20251130_152757.csv" 
     Y_TRAIN_PATH = f"{DATA_DIR}/y_train.csv"
-    X_TEST_PATH = f"{DATA_DIR}/X_test_preprocessed_20251129_234429.csv"   
+    X_TEST_PATH = f"{DATA_DIR}/X_test_clean_no_leakage_20251130_152757.csv"   
 
     cat_pipeline = PisaCatBoost()
 
