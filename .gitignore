@@ -4,3 +4,5 @@ data/
 .history/
 .DS_Store
 docs/
+output
+*.pklmodel/output/xgb_pisa_pipeline.pkl
